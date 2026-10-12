@@ -1,0 +1,13 @@
+# 用户存档，绝不入库
+data/
+
+# 安装脚本生成的（含本机绝对路径）
+server/native-host.json
+
+# 临时文件
+_*.mjs
+_*.bin
+_html_*.txt
+
+node_modules/
+*.log

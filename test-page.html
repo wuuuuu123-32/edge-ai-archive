@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>快速排序详解 - 测试页</title>
+<style>
+  body { margin: 0; background: #f2f3f5; font: 15px/1.75 "Microsoft YaHei", system-ui, sans-serif; color: #1b1d22; }
+  .app { max-width: 780px; margin: 0 auto; padding: 24px 16px 80px; }
+  .banner {
+    position: sticky; top: 0; z-index: 10; margin: 0 -16px 18px; padding: 10px 16px;
+    background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
+    border-bottom: 1px solid #e3e5e9; font-size: 13px; color: #5b6270;
+  }
+  .msg { background: #fff; border-radius: 12px; padding: 18px 22px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .msg.user { background: #e8f0fe; margin-left: 90px; margin-bottom: 14px; }
+  h2 { font-size: 19px; margin: 26px 0 10px; }
+  h3 { font-size: 16px; margin: 22px 0 8px; }
+  p { margin: 10px 0; }
+  code { background: #f0f1f3; padding: 2px 5px; border-radius: 4px; font: 13px ui-monospace, Consolas, monospace; }
+  pre { background: #1e2229; color: #e6e8ec; padding: 14px 16px; border-radius: 8px; overflow-x: auto; font: 13px/1.6 ui-monospace, Consolas, monospace; }
+  pre code { background: none; color: inherit; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14px; }
+  th, td { border: 1px solid #dfe2e7; padding: 7px 10px; text-align: left; }
+  th { background: #f6f7f9; }
+  ul, ol { margin: 10px 0; padding-left: 26px; }
+  li { margin: 4px 0; }
+  blockquote { margin: 12px 0; padding: 8px 14px; border-left: 3px solid #2f6fed; background: #f6f8fd; color: #3a4050; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="banner">↑ 这是一条 sticky 顶栏，用来测试拼接时会不会重复出现（它不在回答容器里，所以不会被截进去）</div>
+
+  <div class="msg user">给我讲讲快速排序，要详细一点。</div>
+
+  <div class="msg">
+    <h2>快速排序（Quicksort）详解</h2>
+
+    <p>快速排序是 Tony Hoare 在 1960 年提出的一种分治排序算法。它在平均情况下的时间复杂度是 <code>O(n log n)</code>，并且是<strong>原地排序</strong>（不需要额外的大块内存），因此在实际工程里比归并排序更常用。</p>
+
+    <h3>一、核心思想</h3>
+    <p>快速排序可以概括成三句话：</p>
+    <ol>
+      <li><strong>选基准（pivot）</strong>：从数组里挑一个元素作为分界点。</li>
+      <li><strong>分区（partition）</strong>：把小于基准的放到左边，大于基准的放到右边，基准就位。</li>
+      <li><strong>递归</strong>：对左右两段分别重复上面两步，直到每段只剩 0 或 1 个元素。</li>
+    </ol>
+
+    <blockquote>分治的关键不是"分"，而是"合"。快排之所以快，是因为它根本不需要"合"——分区完成时，元素已经在最终位置上了。</blockquote>
+
+    <h3>二、Lomuto 分区方案</h3>
+    <p>最常见的实现是 Lomuto 方案：取最后一个元素做基准，用一个指针 <code>i</code> 维护"小于区"的右边界。</p>
+
+<pre><code class="language-python">def quicksort(a, lo=0, hi=None):
+    if hi is None:
+        hi = len(a) - 1
+    if lo &gt;= hi:
+        return
+    p = partition(a, lo, hi)
+    quicksort(a, lo, p - 1)
+    quicksort(a, p + 1, hi)
+
+def partition(a, lo, hi):
+    pivot = a[hi]
+    i = lo
+    for j in range(lo, hi):
+        if a[j] &lt; pivot:
+            a[i], a[j] = a[j], a[i]
+            i += 1
+    a[i], a[hi] = a[hi], a[i]
+    return i
+</code></pre>
+
+    <h3>三、Hoare 分区方案</h3>
+    <p>Hoare 的原始方案用两个指针从两端向中间夹逼，交换逆序对。它的交换次数更少，在有很多重复元素的数组上表现更好。</p>
+
+<pre><code class="language-c">int hoare_partition(int a[], int lo, int hi) {
+    int pivot = a[(lo + hi) / 2];
+    int i = lo - 1, j = hi + 1;
+    while (1) {
+        do { i++; } while (a[i] &lt; pivot);
+        do { j--; } while (a[j] &gt; pivot);
+        if (i &gt;= j) return j;
+        int t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+}
+</code></pre>
+
+    <h3>四、复杂度对比</h3>
+    <p>下面这张表列出了几种常见排序算法的性能特征，注意"稳定性"一列的差别：</p>
+
+    <table>
+      <thead>
+        <tr><th>算法</th><th>平均时间</th><th>最坏时间</th><th>额外空间</th><th>稳定</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>快速排序</td><td>O(n log n)</td><td>O(n²)</td><td>O(log n)</td><td>否</td></tr>
+        <tr><td>归并排序</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n)</td><td>是</td></tr>
+        <tr><td>堆排序</td><td>O(n log n)</td><td>O(n log n)</td><td>O(1)</td><td>否</td></tr>
+        <tr><td>插入排序</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>是</td></tr>
+      </tbody>
+    </table>
+
+    <h3>五、关于最坏情况的几点提醒</h3>
+    <ul>
+      <li>当输入已经<em>完全有序</em>时，固定取末元素做基准会退化成 <code>O(n²)</code>。</li>
+      <li>常见的对策是<strong>随机化基准</strong>，或者取"首、中、尾"三者的中位数（median-of-three）。</li>
+      <li>递归深度最坏可达 <code>O(n)</code>，所以工程实现通常先处理较短的一边，把递归深度压到 <code>O(log n)</code>，这叫<strong>尾递归优化</strong>。</li>
+      <li>当子数组长度小于某个阈值（常见是 16）时，切换到插入排序反而更快，因为小数组上快排的函数调用开销盖过了算法优势。</li>
+      <li>大量重复元素会让 Lomuto 分区退化成 <code>O(n²)</code>，此时应该用<strong>三路划分</strong>（Dutch national flag）。</li>
+    </ul>
+
+    <h3>六、三路划分（处理重复元素）</h3>
+    <p>把数组分成 <code>&lt; pivot</code>、<code>== pivot</code>、<code>&gt; pivot</code> 三段，中间那段直接确定位置，不再递归：</p>
+
+<pre><code class="language-python">def three_way(a, lo, hi):
+    if lo &gt;= hi:
+        return
+    pivot = a[lo]
+    lt, i, gt = lo, lo, hi
+    while i &lt;= gt:
+        if a[i] &lt; pivot:
+            a[lt], a[i] = a[i], a[lt]
+            lt += 1; i += 1
+        elif a[i] &gt; pivot:
+            a[i], a[gt] = a[gt], a[i]
+            gt -= 1
+        else:
+            i += 1
+    three_way(a, lo, lt - 1)
+    three_way(a, gt + 1, hi)
+</code></pre>
+
+    <h3>七、稳定性与工程取舍</h3>
+    <p>快速排序<strong>不稳定</strong>：相等的元素在分区时可能被换到别处。如果需要稳定，就得给元素附加原始下标做二级比较键，代价是额外空间和常数时间。</p>
+    <p>工程上的普遍做法是混合排序：<strong>introsort</strong> = 快排 + 堆排序 + 插入排序。递归深度超过 <code>2·log n</code> 时切换成堆排序，保证最坏情况也是 <code>O(n log n)</code>；小数组切插入排序。C++ 的 <code>std::sort</code>、Go 的 <code>sort.Slice</code> 都属于这一类。</p>
+
+    <blockquote>如果你只需要记住一句话：快排的性能一半取决于分区策略，另一半取决于基准的选择。这两件事决定了它是在 <code>O(n log n)</code> 还是 <code>O(n²)</code> 上跑。</blockquote>
+
+    <h3>八、小结</h3>
+    <ol>
+      <li>分治 + 原地分区，平均 <code>O(n log n)</code>，常数因子小，是通用排序的首选。</li>
+      <li>最坏 <code>O(n²)</code>，靠随机化 / 三数取中 / introsort 规避。</li>
+      <li>不稳定；重复元素多时用三路划分。</li>
+    </ol>
+
+    <p>以上内容到此为止。如果你希望我再补充「并行快排」或者「外部排序里怎么用快排」，告诉我一声。</p>
+  </div>
+</div>
+</body>
+</html>
