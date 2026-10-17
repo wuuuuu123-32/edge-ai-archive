@@ -9,9 +9,10 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const VERSION = '1.1.0';
-const HERE = import.meta.dirname;
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = path.join(HERE, 'config.json');
 
 function loadConfig() {
@@ -306,12 +307,26 @@ function handleSave(payload) {
 
 /* ------------------------------ 服务 ------------------------------ */
 
+function isExtensionOrigin(origin) {
+  return origin.startsWith('chrome-extension://');
+}
+
+function isAllowedOrigin(origin) {
+  return isExtensionOrigin(origin) || /^http:\/\/localhost(?::\d+)?$/.test(origin);
+}
+
 const server = http.createServer(async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = String(req.headers.origin || '');
+  if (isAllowedOrigin(origin)) res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
 
   if (req.method === 'OPTIONS') {
+    if (origin && !isAllowedOrigin(origin)) {
+      json(res, { ok: false, error: 'forbidden' }, 403);
+      return;
+    }
     res.writeHead(204);
     res.end();
     return;
@@ -333,8 +348,7 @@ const server = http.createServer(async (req, res) => {
 
     // 让扩展在服务版本过旧时把它换掉（不然新代码永远不生效）
     if (req.method === 'POST' && url.pathname === '/shutdown') {
-      const origin = String(req.headers.origin || '');
-      if (origin && !origin.startsWith('chrome-extension://') && !origin.startsWith('extension://')) {
+      if (!isExtensionOrigin(origin)) {
         json(res, { ok: false, error: 'forbidden' }, 403);
         return;
       }
@@ -355,6 +369,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'POST' && url.pathname === '/save') {
+      if (!isExtensionOrigin(origin)) {
+        json(res, { ok: false, error: 'forbidden' }, 403);
+        return;
+      }
       const raw = await readBody(req);
       let payload;
       try {
@@ -368,6 +386,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'POST' && url.pathname === '/open') {
+      if (!isExtensionOrigin(origin)) {
+        json(res, { ok: false, error: 'forbidden' }, 403);
+        return;
+      }
       const raw = await readBody(req);
       let body = {};
       try { body = JSON.parse(raw || '{}'); } catch { /* 忽略 */ }

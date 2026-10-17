@@ -67,7 +67,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           sendResponse(await callServer('/types'));
           break;
         case 'subs':
-          sendResponse(await callServer('/subs?type=' + encodeURIComponent(msg.type || '')));
+          sendResponse(await callServer('/subs?type=' + encodeURIComponent(msg.category || '')));
           break;
         case 'save':
           sendResponse(await postJSON('/save', msg.payload));

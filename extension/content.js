@@ -435,7 +435,7 @@
     const t = panel.elType.value.trim();
     const box = panel.shadow.querySelector('#subChips');
     if (!t) { fillChips(box, [], null, ''); return; }
-    send('subs', { type: t }).then((r) => {
+    send('subs', { category: t }).then((r) => {
       if (!panel) return;
       const subs = (r && r.ok && Array.isArray(r.subs)) ? r.subs : [];
       fillChips(box, subs, (v) => { panel.elSub.value = v; }, '');
