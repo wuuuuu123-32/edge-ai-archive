@@ -11,3 +11,5 @@ _html_*.txt
 
 node_modules/
 *.log
+
+extension-test/
